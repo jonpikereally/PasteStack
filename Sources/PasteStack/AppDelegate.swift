@@ -101,6 +101,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let source = NSMenuItem(title: "Update Source…", action: #selector(editUpdateSource), keyEquivalent: "")
         source.target = self
         menu.addItem(source)
+
+        let github = NSMenuItem(title: "PasteStack on GitHub", action: #selector(openGitHub), keyEquivalent: "")
+        github.target = self
+        menu.addItem(github)
         menu.addItem(.separator())
 
         let quit = NSMenuItem(title: "Quit PasteStack", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
@@ -240,6 +244,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         Updater.shared.feed = value
         Updater.shared.check { _ in }
+    }
+
+    @objc private func openGitHub() {
+        if let url = URL(string: "https://github.com/jonpikereally/PasteStack") {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     @objc private func openAccessibilitySettings() {
