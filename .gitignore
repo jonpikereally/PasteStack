@@ -1,0 +1,12 @@
+# Build output
+PasteStack.app/
+Sources/PasteStack/Version.swift
+.build/
+*.zip
+!updates/PasteStack.zip
+
+# macOS
+.DS_Store
+
+# Local Claude Code settings
+.claude/
