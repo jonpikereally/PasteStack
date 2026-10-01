@@ -30,8 +30,11 @@ SwiftUI, zero dependencies. Requires macOS 13+ and Xcode Command Line Tools
 - Usage: ⇧⌘V opens the card wall; ←/→ + ↩ paste (⇧↩ plain text); double-click
   pastes; right-click a card for pinboards / paste-as-image / delete.
 - All data stays local in ~/Library/Application Support/PasteStack.
-- Releases: bump VERSION, run `UPDATE_NOTES="…" ./release.sh`, then commit
-  and push. release.sh writes a universal build to updates/PasteStack.zip and
+- Releases ship automatically: bump VERSION and update RELEASE_NOTES.txt in the
+  same PR. On every push to main, .github/workflows/release.yml builds on macOS
+  and, if VERSION is newer than updates/latest.json, commits updates/ to main as
+  github-actions[bot]. Never hand-edit updates/. Manual fallback: run
+  `UPDATE_NOTES="…" ./release.sh`, then commit and push. release.sh writes a universal build to updates/PasteStack.zip and
   updates/latest.json; every installed copy's updater reads latest.json from
   raw.githubusercontent.com (main branch). raw.githubusercontent.com can cache
   for about 5 minutes, so a fresh release may not be seen immediately.

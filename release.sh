@@ -3,10 +3,18 @@
 # written to updates/PasteStack.zip + updates/latest.json. Committing and
 # pushing updates/ ships it: every installed copy's "Check for Updates" reads
 # latest.json from this repo on GitHub.
+#
+# Usually you don't run this yourself: bump VERSION, write the notes in
+# RELEASE_NOTES.txt, and merge to main. .github/workflows/release.yml then runs
+# this on a Mac and commits updates/. To ship by hand instead:
 #   UPDATE_NOTES="What changed" ./release.sh
+# (without UPDATE_NOTES the notes come from RELEASE_NOTES.txt)
 set -e
 cd "$(dirname "$0")"
 VERSION=$(cat VERSION)
+if [[ -z "${UPDATE_NOTES:-}" && -f RELEASE_NOTES.txt ]]; then
+  UPDATE_NOTES=$(<RELEASE_NOTES.txt)
+fi
 BUILT=$(date "+%b %d, %H:%M")
 FEED="${UPDATE_FEED-https://raw.githubusercontent.com/jonpikereally/PasteStack/main/updates/latest.json}"
 cat > Sources/PasteStack/Version.swift <<SWIFT
