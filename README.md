@@ -93,10 +93,15 @@ Sources are in `Sources/PasteStack/`: plain Swift + AppKit + SwiftUI, compiled
 with `swiftc` directly (no Xcode project, no dependencies).
 
 - `./build.sh` builds `PasteStack.app` for this Mac, for trying changes locally.
-- To ship a release: bump `VERSION`, then run
-  `UPDATE_NOTES="What changed" ./release.sh` and commit + push. That writes a
-  universal build to `updates/PasteStack.zip` and the version file
-  `updates/latest.json`, which every installed copy checks.
+- To ship a release: bump `VERSION`, write what changed in
+  `RELEASE_NOTES.txt`, and merge to `main`. The **Release** workflow
+  (`.github/workflows/release.yml`) builds every push to `main` on a GitHub
+  Mac runner, and when `VERSION` is newer than `updates/latest.json` it commits
+  the universal `updates/PasteStack.zip` and `updates/latest.json` back to
+  `main`, which every installed copy checks. Pushes that don't bump the
+  version ship nothing.
+- To ship from your own Mac instead: `UPDATE_NOTES="What changed" ./release.sh`
+  (or omit `UPDATE_NOTES` to use `RELEASE_NOTES.txt`), then commit + push.
 
 The update source can be changed per install (menu → **Update Source…**) or
 per build (`UPDATE_FEED=https://…/latest.json ./build.sh`). Feed format:
