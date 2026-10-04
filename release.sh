@@ -12,6 +12,14 @@
 set -e
 cd "$(dirname "$0")"
 VERSION=$(cat VERSION)
+# Every error code used in the app and installer must be documented.
+missing=$(grep -ohE 'PS-[0-9]{3}' Sources/PasteStack/*.swift release.sh | sort -u | while read -r c; do
+  grep -q "^| $c |" README.md || echo "$c"
+done)
+if [[ -n "$missing" ]]; then
+  echo "Error codes missing from README.md's Error codes table: $missing" >&2
+  exit 1
+fi
 if [[ -z "${UPDATE_NOTES:-}" && -f RELEASE_NOTES.txt ]]; then
   UPDATE_NOTES=$(<RELEASE_NOTES.txt)
 fi
@@ -48,14 +56,23 @@ cat > "$DIST/PasteStack/Install PasteStack.command" <<'INSTALL'
 #!/bin/bash
 # PasteStack installer — copies the app to ~/Applications and launches it.
 cd "$(dirname "$0")"
+fail() {
+  echo
+  echo "Error $1: $2"
+  echo "Error code list: https://github.com/jonpikereally/PasteStack#error-codes"
+  exit 1
+}
 echo "Installing PasteStack…"
-mkdir -p ~/Applications
+mkdir -p ~/Applications || fail PS-601 "Couldn't create ~/Applications."
 rm -rf ~/Applications/PasteStack.app
-ditto --norsrc PasteStack.app ~/Applications/PasteStack.app
+ditto --norsrc PasteStack.app ~/Applications/PasteStack.app \
+  || fail PS-601 "Couldn't copy PasteStack into ~/Applications."
 # Clear the download quarantine and re-sign locally so macOS trusts it on this Mac.
 xattr -dr com.apple.quarantine ~/Applications/PasteStack.app 2>/dev/null
-codesign --force --sign - ~/Applications/PasteStack.app
-open ~/Applications/PasteStack.app
+codesign --force --sign - ~/Applications/PasteStack.app 2>/dev/null \
+  || fail PS-602 "Couldn't sign PasteStack for this Mac."
+open ~/Applications/PasteStack.app \
+  || fail PS-603 "PasteStack was installed but couldn't be opened. Open it from ~/Applications yourself."
 echo
 echo "Done! Look for the clipboard icon in your menu bar."
 echo "Grant the Accessibility permission when asked — that lets PasteStack"

@@ -110,7 +110,7 @@ final class ClipboardMonitor {
         let url = store.rawDir.appendingPathComponent(filename)
         if !FileManager.default.fileExists(atPath: url.path) {
             if let data = try? JSONEncoder().encode(archive) {
-                try? data.write(to: url)
+                save(data, to: url)
             }
         }
 
@@ -132,7 +132,7 @@ final class ClipboardMonitor {
             imageFile = Self.hash(png) + ".png"
             let imgURL = store.imagesDir.appendingPathComponent(imageFile!)
             if !FileManager.default.fileExists(atPath: imgURL.path) {
-                try? png.write(to: imgURL)
+                save(png, to: imgURL)
             }
         } else if let str = pb.string(forType: .string),
                   !str.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -181,7 +181,7 @@ final class ClipboardMonitor {
                 let filename = hash + ".png"
                 let url = store.imagesDir.appendingPathComponent(filename)
                 if !FileManager.default.fileExists(atPath: url.path) {
-                    try? png.write(to: url)
+                    save(png, to: url)
                 }
                 let item = ClipItem(type: .image, imageFile: filename,
                                     appName: appName, bundleID: bundleID,
@@ -212,7 +212,7 @@ final class ClipboardMonitor {
         let previewName = hash + ".png"
         let previewURL = store.imagesDir.appendingPathComponent(previewName)
         if !FileManager.default.fileExists(atPath: previewURL.path) {
-            try? png.write(to: previewURL)
+            save(png, to: previewURL)
         }
         let item = ClipItem(type: .file, text: fileURL.path, imageFile: previewName,
                             appName: appName, bundleID: bundleID,
@@ -243,6 +243,13 @@ final class ClipboardMonitor {
             DispatchQueue.main.async {
                 self?.store.setOCR(id: itemID, text: text)
             }
+        }
+    }
+
+    private func save(_ data: Data, to url: URL) {
+        do { try data.write(to: url) } catch {
+            ErrorReporter.shared.report(AppError(.itemSaveFailed, "\(url.lastPathComponent) — \(error.localizedDescription)"),
+                                        surface: .menu)
         }
     }
 

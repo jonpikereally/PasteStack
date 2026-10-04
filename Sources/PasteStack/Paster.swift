@@ -43,7 +43,8 @@ enum Paster {
                 monitor.markSelfWrite()
                 return
             }
-            // No image resolvable — fall through to the normal paste.
+            ErrorReporter.shared.report(AppError(.itemUnreadable, "no readable image for paste-as-image"),
+                                        surface: .menu)
         }
 
         // Plain-text paste: strip all formatting/types, write just the string.
@@ -55,10 +56,10 @@ enum Paster {
 
         // Catch-all items: restore the original pasteboard structure —
         // every item, every type, byte-for-byte, in original order.
-        if let rawFile = item.rawFile,
-           let data = try? Data(contentsOf: store.rawDir.appendingPathComponent(rawFile)) {
+        if let rawFile = item.rawFile {
+            let data = try? Data(contentsOf: store.rawDir.appendingPathComponent(rawFile))
             var restored = false
-            if let archive = try? JSONDecoder().decode([[RawBlob]].self, from: data),
+            if let data, let archive = try? JSONDecoder().decode([[RawBlob]].self, from: data),
                !archive.isEmpty {
                 let pbItems = archive.map { blobs -> NSPasteboardItem in
                     let pbItem = NSPasteboardItem()
@@ -68,7 +69,7 @@ enum Paster {
                     return pbItem
                 }
                 restored = pb.writeObjects(pbItems)
-            } else if let legacy = try? JSONDecoder().decode([String: Data].self, from: data),
+            } else if let data, let legacy = try? JSONDecoder().decode([String: Data].self, from: data),
                       !legacy.isEmpty {
                 // Archives from the earlier catch-all format.
                 for (typeName, blob) in legacy {
@@ -80,6 +81,7 @@ enum Paster {
                 monitor.markSelfWrite()
                 return
             }
+            ErrorReporter.shared.report(AppError(.itemUnreadable, "app data \(rawFile)"), surface: .menu)
         }
 
         switch item.type {
@@ -98,13 +100,17 @@ enum Paster {
 
     /// Simulate Cmd+V in the frontmost app. Requires Accessibility permission.
     static func sendCmdV() {
-        guard let src = CGEventSource(stateID: .combinedSessionState) else { return }
         let vKey = CGKeyCode(9) // kVK_ANSI_V
-        let down = CGEvent(keyboardEventSource: src, virtualKey: vKey, keyDown: true)
-        let up = CGEvent(keyboardEventSource: src, virtualKey: vKey, keyDown: false)
-        down?.flags = .maskCommand
-        up?.flags = .maskCommand
-        down?.post(tap: .cghidEventTap)
-        up?.post(tap: .cghidEventTap)
+        guard let src = CGEventSource(stateID: .combinedSessionState),
+              let down = CGEvent(keyboardEventSource: src, virtualKey: vKey, keyDown: true),
+              let up = CGEvent(keyboardEventSource: src, virtualKey: vKey, keyDown: false) else {
+            ErrorReporter.shared.report(AppError(.pasteKeystrokeFailed, "couldn't create the keyboard events"),
+                                        surface: .menu)
+            return
+        }
+        down.flags = .maskCommand
+        up.flags = .maskCommand
+        down.post(tap: .cghidEventTap)
+        up.post(tap: .cghidEventTap)
     }
 }

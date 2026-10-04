@@ -11,6 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var pauseMenuItem: NSMenuItem!
     private var catchAllMenuItem: NSMenuItem!
     private var axMenuItem: NSMenuItem!
+    private var problemMenuItem: NSMenuItem!
     private var screenshotMenuItem: NSMenuItem!
     private var loginMenuItem: NSMenuItem!
     private var mailtoMenuItem: NSMenuItem!
@@ -24,7 +25,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         monitor.start()
 
         hotKey.onPress = { [weak self] in self?.panelController.toggle() }
-        hotKey.register()
+        if let failure = hotKey.register() {
+            ErrorReporter.shared.report(AppError(.shortcutUnavailable, failure), surface: .alert,
+                                        title: "The ⇧⌘V shortcut isn't working")
+        }
 
         screenshotWatcher.onScreenshot = { [weak self] url in
             self?.monitor.ingestImageFile(url, appName: "Screenshot",
@@ -37,6 +41,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         setupStatusItem()
+        ErrorReporter.shared.onChange = { [weak self] in self?.refreshProblemItem() }
+        reportFailedUpdateIfAny()
 
         Updater.shared.onChange = { [weak self] in self?.refreshUpdateItem() }
         Updater.shared.startAutomaticChecks()
@@ -61,6 +67,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         axMenuItem = NSMenuItem(title: "", action: #selector(openAccessibilitySettings), keyEquivalent: "")
         axMenuItem.target = self
         menu.addItem(axMenuItem)
+
+        problemMenuItem = NSMenuItem(title: "", action: #selector(showPendingProblem), keyEquivalent: "")
+        problemMenuItem.target = self
+        problemMenuItem.isHidden = true
+        menu.addItem(problemMenuItem)
         menu.addItem(.separator())
 
         let open = NSMenuItem(title: "Open PasteStack", action: #selector(openPanel), keyEquivalent: "v")
@@ -133,22 +144,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 try service.register()
             }
         } catch {
-            let alert = NSAlert()
-            alert.messageText = "Couldn't change login item"
-            alert.informativeText = error.localizedDescription
-                + "\n\nYou can also add PasteStack manually in System Settings → General → Login Items."
-            alert.runModal()
+            ErrorReporter.shared.report(AppError(.loginItemFailed, error.localizedDescription),
+                                        surface: .alert, title: "Couldn't change Open at Login")
         }
         loginMenuItem.state = service.status == .enabled ? .on : .off
     }
 
     // Refresh live status each time the menu opens.
     func menuNeedsUpdate(_ menu: NSMenu) {
+        refreshProblemItem()
         loginMenuItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         if Paster.accessibilityTrusted {
             axMenuItem.title = "Auto-paste: ✓ enabled"
         } else {
-            axMenuItem.title = "⚠️ Auto-paste OFF — click to grant Accessibility"
+            axMenuItem.title = "⚠️ Auto-paste OFF (\(ErrorCode.accessibilityMissing.rawValue)) — click to grant Accessibility"
         }
     }
 
@@ -216,18 +225,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func showUpdateError(_ error: Error) {
-        let alert = NSAlert()
-        alert.messageText = "Couldn't update PasteStack"
-        alert.informativeText = error.localizedDescription
-        if case UpdateError.noFeed = error {
-            alert.addButton(withTitle: "Set Update Source…")
-            alert.addButton(withTitle: "Cancel")
-            NSApp.activate(ignoringOtherApps: true)
-            if alert.runModal() == .alertFirstButtonReturn { editUpdateSource() }
-            return
+        let e = AppError(wrapping: error)
+        let sourceProblem = e.code == .noUpdateSource || e.code == .badUpdateSource
+        let picked = ErrorReporter.shared.present(e, title: "Couldn't update PasteStack",
+                                                  actions: sourceProblem ? ["Set Update Source…"] : [])
+        if picked == 0 { editUpdateSource() }
+    }
+
+    /// The swap script leaves a coded marker when installing an update fails
+    /// and it has put the previous version back.
+    private func reportFailedUpdateIfAny() {
+        let marker = Updater.swapFailureMarker
+        guard let text = try? String(contentsOf: marker, encoding: .utf8) else { return }
+        try? FileManager.default.removeItem(at: marker)
+        let parts = text.split(separator: "|", maxSplits: 1).map(String.init)
+        let code = parts.first.flatMap { ErrorCode(rawValue: $0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+            ?? .updateSwapFailed
+        ErrorReporter.shared.report(AppError(code, parts.count > 1 ? parts[1] : nil),
+                                    surface: .alert, title: "Couldn't install the update")
+    }
+
+    private func refreshProblemItem() {
+        if let p = ErrorReporter.shared.pending {
+            problemMenuItem.title = "⚠️ Problem \(p.code.rawValue) — click for details"
+            problemMenuItem.isHidden = false
+        } else {
+            problemMenuItem.isHidden = true
         }
-        NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
+    }
+
+    @objc private func showPendingProblem() {
+        guard let p = ErrorReporter.shared.pending else { return }
+        ErrorReporter.shared.clearPending()
+        ErrorReporter.shared.present(p, title: "PasteStack ran into a problem")
     }
 
     @objc private func editUpdateSource() {
@@ -247,7 +277,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         let value = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         if !value.isEmpty && Updater.url(from: value) == nil {
-            showUpdateError(UpdateError.badFeed(value))
+            showUpdateError(AppError(.badUpdateSource, value))
             return
         }
         Updater.shared.feed = value

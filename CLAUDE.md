@@ -43,3 +43,10 @@ SwiftUI, zero dependencies. Requires macOS 13+ and Xcode Command Line Tools
   update the user only has to re-grant Accessibility when prompted.
 - Info.plist lives in Resources/ and is copied into the bundle by the scripts;
   PasteStack.app/ is build output (gitignored).
+- Error codes (rule for all of Jon's apps): every error a user can see gets a
+  stable `PS-xxx` code. Add it to `ErrorCode` in Sources/PasteStack/Errors.swift
+  (summary + hint) and to the README "Error codes" table, and show it through
+  `ErrorReporter` (alert, or `.menu` for background failures). Never show an
+  alert without a code, never reuse or renumber codes. 6xx is the
+  `Install PasteStack.command` script in release.sh. release.sh refuses to
+  build if a code is missing from the README table.
