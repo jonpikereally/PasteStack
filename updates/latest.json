@@ -1,1 +1,1 @@
-{"version": "1.17", "url": "PasteStack.zip", "notes": "Added a PasteStack on GitHub link to the menu."}
+{"version": "1.18", "url": "PasteStack.zip", "notes": "Copied email links paste as just the address, with no \"mailto:\" in front. Turn it off from the menu bar with Remove \"mailto:\" from Copied Emails."}
