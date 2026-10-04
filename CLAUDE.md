@@ -45,8 +45,11 @@ SwiftUI, zero dependencies. Requires macOS 13+ and Xcode Command Line Tools
   PasteStack.app/ is build output (gitignored).
 - Error codes (rule for all of Jon's apps): every error a user can see gets a
   stable `PS-xxx` code. Add it to `ErrorCode` in Sources/PasteStack/Errors.swift
-  (summary + hint) and to the README "Error codes" table, and show it through
-  `ErrorReporter` (alert, or `.menu` for background failures). Never show an
-  alert without a code, never reuse or renumber codes. 6xx is the
+  (summary + hint) and to the public error list ERRORS.md, and show it through
+  `ErrorReporter` (alert, or `.menu` for background failures). Every piece of
+  error text carries hover text (`ErrorReporter.tooltip`) pointing to the
+  error list; alerts get it via `addTooltips`, menu rows via `toolTip`. The
+  repo must stay public so the list is reachable without an account. Never
+  show an error without a code, never reuse or renumber codes. 6xx is the
   `Install PasteStack.command` script in release.sh. release.sh refuses to
-  build if a code is missing from the README table.
+  build if a code is missing from ERRORS.md.

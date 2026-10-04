@@ -12,12 +12,12 @@
 set -e
 cd "$(dirname "$0")"
 VERSION=$(cat VERSION)
-# Every error code used in the app and installer must be documented.
+# Every error code used in the app and installer must be on the public error list.
 missing=$(grep -ohE 'PS-[0-9]{3}' Sources/PasteStack/*.swift release.sh | sort -u | while read -r c; do
-  grep -q "^| $c |" README.md || echo "$c"
+  grep -q "^| $c |" ERRORS.md || echo "$c"
 done)
 if [[ -n "$missing" ]]; then
-  echo "Error codes missing from README.md's Error codes table: $missing" >&2
+  echo "Error codes missing from ERRORS.md: $missing" >&2
   exit 1
 fi
 if [[ -z "${UPDATE_NOTES:-}" && -f RELEASE_NOTES.txt ]]; then
@@ -59,7 +59,9 @@ cd "$(dirname "$0")"
 fail() {
   echo
   echo "Error $1: $2"
-  echo "Error code list: https://github.com/jonpikereally/PasteStack#error-codes"
+  echo "Look up this code on the PasteStack error list:"
+  echo "  https://github.com/jonpikereally/PasteStack/blob/main/ERRORS.md"
+  echo "(You can also give that page to an AI assistant for help.)"
   exit 1
 }
 echo "Installing PasteStack…"

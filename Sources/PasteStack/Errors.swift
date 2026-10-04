@@ -1,8 +1,8 @@
 import AppKit
 
 /// Every failure a user can run into has a stable code, so it can be looked up
-/// (README.md → "Error codes") or pasted into an LLM. Add new codes here and to
-/// that README table together, and never show a user an error without one.
+/// on the public error list (ERRORS.md) or pasted into an LLM. Add new codes
+/// here and to ERRORS.md together, and never show a user an error without one.
 /// Codes are never reused or renumbered.
 enum ErrorCode: String, CaseIterable {
     // 1xx — updates
@@ -126,7 +126,14 @@ final class ErrorReporter {
     }
 
     static let shared = ErrorReporter()
-    static let helpURL = "https://github.com/jonpikereally/PasteStack#error-codes"
+    /// The public error list. Both URLs work without a GitHub account; the raw
+    /// one is plain text, which AI assistants read most reliably.
+    static let helpURL = "https://github.com/jonpikereally/PasteStack/blob/main/ERRORS.md"
+    static let plainTextHelpURL = "https://raw.githubusercontent.com/jonpikereally/PasteStack/main/ERRORS.md"
+
+    /// Hover text for anything that shows an error.
+    static let tooltip = "Look up this error code on the PasteStack error list: \(helpURL)\n"
+        + "You can also give that page and the copied error details to an AI assistant for help."
 
     /// Latest background problem waiting in the menu, if any.
     private(set) var pending: AppError?
@@ -173,6 +180,8 @@ final class ErrorReporter {
         alert.addButton(withTitle: "OK")
         for a in actions { alert.addButton(withTitle: a) }
         alert.addButton(withTitle: "Copy Error Details")
+        alert.addButton(withTitle: "Open Error List")
+        Self.addTooltips(to: alert)
         NSApp.activate(ignoringOtherApps: true)
         let response = alert.runModal().rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
         if response == actions.count + 1 {
@@ -181,8 +190,26 @@ final class ErrorReporter {
             pb.setString(Self.details(error), forType: .string)
             return nil
         }
+        if response == actions.count + 2 {
+            if let url = URL(string: Self.helpURL) { NSWorkspace.shared.open(url) }
+            return nil
+        }
         if response >= 1 && response <= actions.count { return response - 1 }
         return nil
+    }
+
+    /// Puts the error-list hover text on every piece of text in the alert,
+    /// and on the alert itself for the space between them.
+    static func addTooltips(to alert: NSAlert) {
+        alert.layout()
+        func walk(_ view: NSView) {
+            if view is NSTextField { view.toolTip = tooltip }
+            view.subviews.forEach(walk)
+        }
+        if let content = alert.window.contentView {
+            content.toolTip = tooltip
+            walk(content)
+        }
     }
 
     /// Copyable report: everything needed to troubleshoot, nothing private.
@@ -199,6 +226,7 @@ final class ErrorReporter {
         lines.append("PasteStack v\(AppVersion.version) (built \(AppVersion.built)), macOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion), \(arch)")
         lines.append("Time: \(ISO8601DateFormatter().string(from: Date()))")
         lines.append("Error code list: \(helpURL)")
+        lines.append("Plain-text error list for AI assistants: \(plainTextHelpURL)")
         return lines.joined(separator: "\n")
     }
 
