@@ -15,6 +15,13 @@ enum Paster {
         let pb = NSPasteboard.general
         pb.clearContents()
 
+        // History items saved as mailto: links paste as the bare address.
+        if MailtoCleaner.enabled, let t = item.text, let address = MailtoCleaner.clean(t) {
+            pb.setString(address, forType: .string)
+            monitor.markSelfWrite()
+            return
+        }
+
         // Paste-as-image: put actual pixel data on the clipboard, resolved
         // from the file on disk (freshest) or the stored preview.
         if asImage {

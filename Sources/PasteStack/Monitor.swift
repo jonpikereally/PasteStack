@@ -49,9 +49,20 @@ final class ClipboardMonitor {
         lastChangeCount = pb.changeCount
         guard !paused, lastChangeCount != selfWriteChangeCount else { return }
 
-        let types = pb.types ?? []
+        var types = pb.types ?? []
         if Self.skipTypes.contains(where: types.contains) { return }
         guard !types.isEmpty else { return }
+
+        // A copied email link becomes the bare address right on the system
+        // clipboard, so a plain Cmd+V anywhere pastes it clean too.
+        if MailtoCleaner.enabled,
+           let link = pb.string(forType: .string) ?? pb.string(forType: .URL),
+           let address = MailtoCleaner.clean(link) {
+            pb.clearContents()
+            pb.setString(address, forType: .string)
+            lastChangeCount = pb.changeCount
+            types = pb.types ?? []
+        }
 
         let front = NSWorkspace.shared.frontmostApplication
         let appName = front?.localizedName
