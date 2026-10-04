@@ -156,8 +156,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         loginMenuItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
         if Paster.accessibilityTrusted {
             axMenuItem.title = "Auto-paste: ✓ enabled"
+            axMenuItem.toolTip = nil
         } else {
             axMenuItem.title = "⚠️ Auto-paste OFF (\(ErrorCode.accessibilityMissing.rawValue)) — click to grant Accessibility"
+            axMenuItem.toolTip = ErrorReporter.tooltip
         }
     }
 
@@ -248,6 +250,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func refreshProblemItem() {
         if let p = ErrorReporter.shared.pending {
             problemMenuItem.title = "⚠️ Problem \(p.code.rawValue) — click for details"
+            problemMenuItem.toolTip = ErrorReporter.tooltip
             problemMenuItem.isHidden = false
         } else {
             problemMenuItem.isHidden = true
