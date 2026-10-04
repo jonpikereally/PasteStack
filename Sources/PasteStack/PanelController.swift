@@ -99,6 +99,9 @@ final class PanelController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
             if Paster.accessibilityTrusted {
                 Paster.sendCmdV()
+            } else {
+                // The menu's Auto-paste row already shows this code; just log it.
+                ErrorReporter.shared.report(AppError(.accessibilityMissing), surface: .logOnly)
             }
         }
     }

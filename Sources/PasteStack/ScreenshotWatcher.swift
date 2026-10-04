@@ -25,7 +25,12 @@ final class ScreenshotWatcher {
         guard source == nil else { return }
         known = Set((try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? [])
         let fd = open(dir.path, O_EVTONLY)
-        guard fd >= 0 else { return }
+        guard fd >= 0 else {
+            ErrorReporter.shared.report(AppError(.screenshotFolderUnwatchable,
+                                                 "\(dir.path) — \(String(cString: strerror(errno)))"),
+                                        surface: .menu)
+            return
+        }
         let src = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd,
                                                             eventMask: .write,
                                                             queue: .main)
@@ -44,7 +49,13 @@ final class ScreenshotWatcher {
     }
 
     private func checkNew() {
-        guard let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path) else { return }
+        let names: [String]
+        do { names = try FileManager.default.contentsOfDirectory(atPath: dir.path) } catch {
+            ErrorReporter.shared.report(AppError(.screenshotFolderUnwatchable,
+                                                 "\(dir.path) — \(error.localizedDescription)"),
+                                        surface: .menu)
+            return
+        }
         for name in names where !known.contains(name) {
             known.insert(name)
             guard !name.hasPrefix("."),

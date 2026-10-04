@@ -1,1 +1,1 @@
-Copied email links paste as just the address, with no "mailto:" in front. Turn it off from the menu bar with Remove "mailto:" from Copied Emails.
+Every error now has a code (like PS-103) and a Copy Error Details button, to make troubleshooting easier. Problems that used to fail silently now show up in the menu. Also fixes a rare case where a failed update could leave PasteStack broken.

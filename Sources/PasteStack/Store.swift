@@ -16,19 +16,31 @@ final class Store: ObservableObject {
     init() {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         baseDir = appSupport.appendingPathComponent("PasteStack", isDirectory: true)
-        try? FileManager.default.createDirectory(at: imagesDir, withIntermediateDirectories: true)
-        try? FileManager.default.createDirectory(at: rawDir, withIntermediateDirectories: true)
-        load()
+        for dir in [imagesDir, rawDir] {
+            do { try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true) } catch {
+                ErrorReporter.shared.report(AppError(.dataFolderUnavailable, "\(dir.path) — \(error.localizedDescription)"),
+                                            surface: .alert)
+                break
+            }
+        }
+        items = loadFile(indexURL) ?? []
+        boards = loadFile(boardsURL) ?? []
     }
 
-    private func load() {
-        if let data = try? Data(contentsOf: indexURL),
-           let decoded = try? JSONDecoder().decode([ClipItem].self, from: data) {
-            items = decoded
-        }
-        if let data = try? Data(contentsOf: boardsURL),
-           let decoded = try? JSONDecoder().decode([Pinboard].self, from: data) {
-            boards = decoded
+    /// A missing file just means a fresh start. An unreadable one is renamed
+    /// aside (so the next save can't overwrite it) and reported.
+    private func loadFile<T: Decodable>(_ url: URL) -> T? {
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        do {
+            return try JSONDecoder().decode(T.self, from: Data(contentsOf: url))
+        } catch {
+            let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+            let kept = url.deletingPathExtension().appendingPathExtension("damaged-\(stamp).json")
+            try? FileManager.default.moveItem(at: url, to: kept)
+            ErrorReporter.shared.report(AppError(.historyUnreadable,
+                                                 "\(url.lastPathComponent) — \(error.localizedDescription) Kept as \(kept.lastPathComponent)"),
+                                        surface: .alert)
+            return nil
         }
     }
 
@@ -41,8 +53,12 @@ final class Store: ObservableObject {
 
     func saveNow() {
         let enc = JSONEncoder()
-        if let data = try? enc.encode(items) { try? data.write(to: indexURL, options: .atomic) }
-        if let data = try? enc.encode(boards) { try? data.write(to: boardsURL, options: .atomic) }
+        do {
+            try enc.encode(items).write(to: indexURL, options: .atomic)
+            try enc.encode(boards).write(to: boardsURL, options: .atomic)
+        } catch {
+            ErrorReporter.shared.report(AppError(.historySaveFailed, error.localizedDescription), surface: .menu)
+        }
     }
 
     // MARK: - Items
