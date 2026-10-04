@@ -13,10 +13,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var axMenuItem: NSMenuItem!
     private var screenshotMenuItem: NSMenuItem!
     private var loginMenuItem: NSMenuItem!
+    private var mailtoMenuItem: NSMenuItem!
     private var updateMenuItem: NSMenuItem!
     private let screenshotWatcher = ScreenshotWatcher()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        UserDefaults.standard.register(defaults: [MailtoCleaner.defaultsKey: true])
         monitor = ClipboardMonitor(store: store)
         panelController = PanelController(store: store, monitor: monitor)
         monitor.start()
@@ -82,6 +84,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         screenshotMenuItem.target = self
         screenshotMenuItem.state = UserDefaults.standard.bool(forKey: "watchScreenshots") ? .on : .off
         menu.addItem(screenshotMenuItem)
+
+        mailtoMenuItem = NSMenuItem(title: "Remove “mailto:” from Copied Emails",
+                                    action: #selector(toggleMailto), keyEquivalent: "")
+        mailtoMenuItem.target = self
+        mailtoMenuItem.state = MailtoCleaner.enabled ? .on : .off
+        menu.addItem(mailtoMenuItem)
 
         loginMenuItem = NSMenuItem(title: "Open at Login",
                                    action: #selector(toggleOpenAtLogin), keyEquivalent: "")
@@ -264,6 +272,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func toggleCatchAll() {
         monitor.catchAll.toggle()
         catchAllMenuItem.state = monitor.catchAll ? .on : .off
+    }
+
+    @objc private func toggleMailto() {
+        MailtoCleaner.enabled.toggle()
+        mailtoMenuItem.state = MailtoCleaner.enabled ? .on : .off
     }
 
     @objc private func toggleScreenshots() {

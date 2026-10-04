@@ -37,8 +37,11 @@ the known traps.
 - **Double-click a card** to paste it (**⇧**-double-click or **⇧↩** for plain text)
 - **Right-click a card** — paste as plain text or as an image, pin to a pinboard, copy without pasting, delete
 - **Pinboards** — tabs along the top; pinned items survive "Clear History" and never age out
+- Copied email links paste as just the address (no `mailto:` in front), in
+  any app, not only from PasteStack. Turn it off from the menu bar.
 - Menu-bar icon → pause capturing, catch-all capture, copy new screenshots to
-  the clipboard, open at login, check for updates, clear history
+  the clipboard, remove "mailto:" from copied emails, open at login, check for
+  updates, clear history
 
 ## Catch-all capture (Logic Pro & other app-private data)
 
