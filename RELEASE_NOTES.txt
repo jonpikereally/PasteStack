@@ -1,1 +1,1 @@
-Hovering over any error now points you to the public error list, and error alerts have an Open Error List button. The list has moved to its own page that anyone can open, with tips for getting help from an AI assistant.
+Quick Delete: hold ⌥ Option and click a card to delete it instantly — the card turns red while the key is held so you can see what will go. Pick a different key (⌘ Command or ⌥⌘), or turn it off, from the menu bar → Quick Delete.

@@ -11,6 +11,7 @@ final class PanelController {
     let state: PanelState
     private var panel: KeyablePanel?
     private var keyMonitor: Any?
+    private var flagsMonitor: Any?
     private var previousApp: NSRunningApplication?
 
     var isVisible: Bool { panel?.isVisible ?? false }
@@ -62,6 +63,13 @@ final class PanelController {
     }
 
     private func installKeyMonitor() {
+        state.refreshDeleteArmed()
+        if flagsMonitor == nil {
+            flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+                self?.state.refreshDeleteArmed(event.modifierFlags)
+                return event
+            }
+        }
         guard keyMonitor == nil else { return }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self, self.isVisible else { return event }
@@ -88,6 +96,8 @@ final class PanelController {
 
     private func removeKeyMonitor() {
         if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil }
+        if let m = flagsMonitor { NSEvent.removeMonitor(m); flagsMonitor = nil }
+        state.deleteArmed = false
     }
 
     /// Copy the item to the pasteboard, return focus to the previous app, and hit Cmd+V for the user.

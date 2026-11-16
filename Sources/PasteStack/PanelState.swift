@@ -8,6 +8,9 @@ final class PanelState: ObservableObject {
     /// Card to scroll into view. Set ONLY by keyboard navigation — clicks
     /// must never trigger a scroll, or the wall slides under the cursor.
     @Published var scrollTarget: UUID? = nil
+    /// The Quick Delete modifier is currently held — cards under the
+    /// pointer show a red "click to delete" overlay.
+    @Published var deleteArmed: Bool = false
 
     let store: Store
     weak var controller: PanelController?
@@ -124,6 +127,20 @@ final class PanelState: ObservableObject {
         if let i = filteredItems.firstIndex(where: { $0.id == id }) {
             selection = i
         }
+    }
+
+    /// Quick Delete: remove the item and keep the selection on a real card.
+    func delete(id: UUID) {
+        guard let item = store.items.first(where: { $0.id == id }) else { return }
+        store.delete(item)
+        lastClick = nil
+        let count = filteredItems.count
+        selection = count == 0 ? 0 : min(selection, count - 1)
+    }
+
+    func refreshDeleteArmed(_ flags: NSEvent.ModifierFlags = NSEvent.modifierFlags) {
+        let armed = QuickDelete.current.matches(flags)
+        if armed != deleteArmed { deleteArmed = armed }
     }
 
     func moveSelection(by delta: Int) {

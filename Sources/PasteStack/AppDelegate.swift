@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var loginMenuItem: NSMenuItem!
     private var mailtoMenuItem: NSMenuItem!
     private var updateMenuItem: NSMenuItem!
+    private var quickDeleteItems: [NSMenuItem] = []
     private let screenshotWatcher = ScreenshotWatcher()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -101,6 +102,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         mailtoMenuItem.target = self
         mailtoMenuItem.state = MailtoCleaner.enabled ? .on : .off
         menu.addItem(mailtoMenuItem)
+
+        let quickDelete = NSMenuItem(title: "Quick Delete (hold a key + click a card)", action: nil, keyEquivalent: "")
+        let qdMenu = NSMenu()
+        qdMenu.autoenablesItems = false
+        for option in QuickDelete.allCases {
+            let item = NSMenuItem(title: option.menuTitle, action: #selector(pickQuickDelete(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = option.rawValue
+            item.isEnabled = true
+            qdMenu.addItem(item)
+            quickDeleteItems.append(item)
+        }
+        quickDelete.submenu = qdMenu
+        menu.addItem(quickDelete)
+        refreshQuickDeleteItems()
 
         loginMenuItem = NSMenuItem(title: "Open at Login",
                                    action: #selector(toggleOpenAtLogin), keyEquivalent: "")
@@ -317,6 +333,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         UserDefaults.standard.set(newValue, forKey: "watchScreenshots")
         screenshotMenuItem.state = newValue ? .on : .off
         newValue ? screenshotWatcher.start() : screenshotWatcher.stop()
+    }
+
+    @objc private func pickQuickDelete(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String, let option = QuickDelete(rawValue: raw) else { return }
+        QuickDelete.current = option
+        refreshQuickDeleteItems()
+    }
+
+    private func refreshQuickDeleteItems() {
+        let current = QuickDelete.current
+        for item in quickDeleteItems {
+            item.state = (item.representedObject as? String) == current.rawValue ? .on : .off
+        }
     }
 
     @objc private func togglePause() {

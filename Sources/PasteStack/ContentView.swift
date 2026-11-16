@@ -40,10 +40,17 @@ struct ContentView: View {
 
             Spacer()
 
-            Text("← → navigate · ↩ paste · ⇧↩ plain text · esc close")
+            Text(hintText)
                 .font(.caption).foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 16).padding(.vertical, 10)
+    }
+
+    private var hintText: String {
+        var hint = "← → navigate · ↩ paste · ⇧↩ plain text"
+        let qd = QuickDelete.current
+        if qd != .off { hint += " · \(qd.symbol)-click delete" }
+        return hint + " · esc close"
     }
 
     private var boardTabs: some View {
@@ -90,6 +97,11 @@ struct ContentView: View {
     /// (honoring the system double-click speed) so slow double-clicks
     /// still paste instead of silently doing nothing.
     private func handleClick(_ item: ClipItem) {
+        if QuickDelete.current.matches(NSEvent.modifierFlags) {
+            DebugLog.log("QUICK DELETE \(DebugLog.describe(item))")
+            state.delete(id: item.id)
+            return
+        }
         if state.registerClick(id: item.id) {
             DebugLog.log("DBLCLICK on \(DebugLog.describe(item))")
             if let live = state.filteredItems.first(where: { $0.id == item.id }) {
@@ -132,6 +144,7 @@ struct ContentView: View {
                                         ForEach(entries, id: \.1.id) { idx, item in
                                             ClipCard(item: item,
                                                      selected: idx == state.selection,
+                                                     deleteArmed: state.deleteArmed,
                                                      store: store,
                                                      state: state)
                                                 .onTapGesture { handleClick(item) }
@@ -158,8 +171,10 @@ struct ContentView: View {
 struct ClipCard: View {
     let item: ClipItem
     let selected: Bool
+    let deleteArmed: Bool
     let store: Store
     let state: PanelState
+    @State private var hovered = false
 
     private var accent: Color {
         switch item.type {
@@ -229,6 +244,25 @@ struct ClipCard: View {
                           lineWidth: selected ? 2.5 : 1))
         .shadow(color: .black.opacity(selected ? 0.3 : 0.12), radius: selected ? 8 : 3, y: 2)
         .scaleEffect(selected ? 1.03 : 1.0)
+        .overlay {
+            if deleteArmed && hovered {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.red.opacity(0.22))
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.red, lineWidth: 2.5)
+                    VStack(spacing: 4) {
+                        Image(systemName: "trash.fill").font(.title2)
+                        Text("Click to delete").font(.caption.weight(.semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(10)
+                    .background(Color.red.opacity(0.85), in: RoundedRectangle(cornerRadius: 8))
+                }
+                .allowsHitTesting(false)
+            }
+        }
+        .onHover { hovered = $0 }
         .animation(.easeOut(duration: 0.12), value: selected)
         .contextMenu { menu }
     }
