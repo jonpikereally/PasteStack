@@ -41,6 +41,7 @@ installer, 999 anything else.
 | PS-110 | The downloaded update is damaged. | The published update is broken. Download the latest version from GitHub instead. |
 | PS-111 | Couldn't start installing the update. | Make sure PasteStack is in ~/Applications and that the folder isn't locked, then try again. |
 | PS-112 | Installing the update failed, so the previous version was kept. | Make sure PasteStack is in ~/Applications and that the folder isn't locked, then try again. |
+| PS-113 | The download was an older version than the update announced, so nothing was installed. | GitHub was still serving a cached copy. Wait five minutes and choose Check for Updates again. |
 | PS-201 | Couldn't change Open at Login. | You can add PasteStack yourself in System Settings → General → Login Items. |
 | PS-301 | PasteStack doesn't have Accessibility permission, so it can copy items but can't paste them for you. | Turn PasteStack on in System Settings → Privacy & Security → Accessibility. If it's already on, remove it with “−”, add it again, and relaunch. |
 | PS-302 | Couldn't send the ⌘V keystroke to paste. | Press ⌘V yourself; the item is already on the clipboard. |

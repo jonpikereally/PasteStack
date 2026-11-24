@@ -18,6 +18,7 @@ enum ErrorCode: String, CaseIterable {
     case updateDamagedApp = "PS-110"
     case updateInstallerFailed = "PS-111"
     case updateSwapFailed = "PS-112"
+    case updateStale = "PS-113"
     // 2xx — login item
     case loginItemFailed = "PS-201"
     // 3xx — pasting and the shortcut
@@ -50,6 +51,7 @@ enum ErrorCode: String, CaseIterable {
         case .updateDamagedApp: return "The downloaded update is damaged."
         case .updateInstallerFailed: return "Couldn't start installing the update."
         case .updateSwapFailed: return "Installing the update failed, so the previous version was kept."
+        case .updateStale: return "The download was an older version than the update announced, so nothing was installed."
         case .loginItemFailed: return "Couldn't change Open at Login."
         case .accessibilityMissing: return "PasteStack doesn't have Accessibility permission, so it can copy items but can't paste them for you."
         case .pasteKeystrokeFailed: return "Couldn't send the ⌘V keystroke to paste."
@@ -74,6 +76,8 @@ enum ErrorCode: String, CaseIterable {
             return "Try again in a few minutes. If it keeps happening, download the latest version from GitHub."
         case .updateInfoMalformed, .updateUnpackFailed, .updateMissingApp, .updateWrongApp, .updateDamagedApp:
             return "The published update is broken. Download the latest version from GitHub instead."
+        case .updateStale:
+            return "GitHub was still serving a cached copy. Wait five minutes and choose Check for Updates again."
         case .updateInstallerFailed, .updateSwapFailed:
             return "Make sure PasteStack is in ~/Applications and that the folder isn't locked, then try again."
         case .loginItemFailed:
