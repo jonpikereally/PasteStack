@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Build a release: universal (Apple Silicon + Intel) app with an installer,
+# Build a release: Apple silicon app with an installer,
 # written to updates/PasteStack.zip + updates/latest.json. Committing and
 # pushing updates/ ships it: every installed copy's "Check for Updates" reads
 # latest.json from this repo on GitHub.
@@ -35,19 +35,15 @@ enum AppVersion {
 SWIFT
 CACHE="${TMPDIR:-/tmp}/pastestack-modcache"
 mkdir -p "$CACHE"
-echo "Building arm64…"
+echo "Building (Apple silicon)…"
 swiftc -O -target arm64-apple-macos13 -module-cache-path "$CACHE" \
   -o "$CACHE/PasteStack-arm64" Sources/PasteStack/*.swift
-echo "Building x86_64…"
-swiftc -O -target x86_64-apple-macos13 -module-cache-path "$CACHE-x86" \
-  -o "$CACHE/PasteStack-x86_64" Sources/PasteStack/*.swift
 
 DIST="$CACHE/dist"
 rm -rf "$DIST"
 APP="$DIST/PasteStack/PasteStack.app"
 mkdir -p "$APP/Contents/MacOS"
-lipo -create -output "$APP/Contents/MacOS/PasteStack" \
-  "$CACHE/PasteStack-arm64" "$CACHE/PasteStack-x86_64"
+cp "$CACHE/PasteStack-arm64" "$APP/Contents/MacOS/PasteStack"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
 codesign --force --sign - "$APP"

@@ -10,7 +10,7 @@ repo).
 
 **Ready-made app:** download [`updates/PasteStack.zip`](updates/PasteStack.zip),
 unzip it, and double-click **Install PasteStack.command** (if macOS blocks it:
-right-click → Open). Works on Apple Silicon and Intel, macOS 13+.
+right-click → Open). Needs an Apple silicon Mac, macOS 13+.
 
 **Build it yourself** (needs Xcode Command Line Tools: `xcode-select --install`):
 
@@ -111,7 +111,7 @@ with `swiftc` directly (no Xcode project, no dependencies).
   `RELEASE_NOTES.txt`, and merge to `main`. The **Release** workflow
   (`.github/workflows/release.yml`) builds every push to `main` on a GitHub
   Mac runner, and when `VERSION` is newer than `updates/latest.json` it commits
-  the universal `updates/PasteStack.zip` and `updates/latest.json` back to
+  the Apple silicon `updates/PasteStack.zip` and `updates/latest.json` back to
   `main`, which every installed copy checks. Pushes that don't bump the
   version ship nothing.
 - To ship from your own Mac instead: `UPDATE_NOTES="What changed" ./release.sh`
